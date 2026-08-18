@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Katana — Web Security Toolkit{% endblock %}
+{% block heading %}Katana{% endblock %}
+{% block subheading %}Crawling and endpoint discovery{% endblock %}
+{% block actions %}
+  <span class="pill {{ 'pill-ok' if status.installed else 'pill-bad' }}">
+    {{ ('● ' ~ (status.version or 'installed')) if status.installed else '✗ not installed' }}
+  </span>
+{% endblock %}
+
+{% block content %}
+{% if not status.installed %}
+<div class="card warn-card">
+  <h2>Katana is not installed</h2>
+  <p class="hint mono">{{ status.install_hint }}</p>
+  <p class="subtle">Binaries are never installed automatically. Set a custom path in
+    <a href="{{ url_for('settings.index') }}">Settings</a> if Katana lives outside your PATH.</p>
+</div>
+{% endif %}
+
+<form id="scan-form" class="scan-form" data-tool="katana" autocomplete="off">
+  <div class="split">
+    <div class="column">
+      <section class="card">
+        <header class="card-header"><h2>Targets</h2></header>
+        <label class="field">
+          <span>Target URLs (one per line)</span>
+          <textarea name="urls" rows="3" placeholder="https://example.local"></textarea>
+        </label>
+        <div class="field-row">
+          <label class="field grow">
+            <span>Seed URL list <em class="req">katana crawl list</em></span>
+            <select name="url_list" data-wordlist-category="crawl">
+              <option value="">— none —</option>
+              {% for wordlist in wordlists if wordlist.category == 'crawl' %}
+              <option value="{{ wordlist.id }}">{{ wordlist.name }} · {{ wordlist.size_human }}{% if wordlist.entries %} · {{ wordlist.entries }} URLs{% endif %}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="field">
+            <span>Depth</span>
+            <input type="number" name="depth" value="3" min="1" max="50">
+          </label>
+          <label class="field">
+            <span>Scope</span>
+            <select name="scope">
+              <option value="">Default (host)</option>
+              <option value="fqdn">Same host (fqdn)</option>
+              <option value="dn">Same domain name (dn)</option>
+              <option value="rdn">Root domain (rdn)</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">Upload seed URL lists from the
+          <a href="{{ url_for('wordlists.library', slug='katana') }}">Katana wordlist library</a> — it is fully
+          independent from the ffuf library.</p>
+      </section>
+
+      <details class="card collapsible" open>
+        <summary><h2>Crawl</h2><span class="subtle">concurrency, rate, duration, JavaScript</span></summary>
+        <div class="collapsible-body">
+          <div class="field-row">
+            <label class="field"><span>Concurrency</span><input type="number" name="concurrency" value="10" min="1" max="200"></label>
+            <label class="field"><span>Parallelism</span><input type="number" name="parallelism" value="10" min="1" max="200"></label>
+            <label class="field"><span>Rate limit (req/s)</span><input type="number" name="rate_limit" value="0" min="0"></label>
+          </div>
+          <div class="field-row">
+            <label class="field"><span>Timeout (s)</span><input type="number" name="timeout" value="{{ default_timeout }}" min="1" max="3600"></label>
+            <label class="field"><span>Delay (s)</span><input type="number" name="delay" value="0" min="0" max="600"></label>
+            <label class="field"><span>Crawl duration</span><input type="text" name="crawl_duration" placeholder="5m"></label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Strategy</span>
+              <select name="strategy">
+                <option value="depth-first">Depth first</option>
+                <option value="breadth-first">Breadth first</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Known files</span>
+              <select name="known_files">
+                <option value="">None</option>
+                <option value="robotstxt">robots.txt</option>
+                <option value="sitemapxml">sitemap.xml</option>
+                <option value="all">All</option>
+              </select>
+            </label>
+          </div>
+          <div class="field-row checks">
+            <label class="check"><input type="checkbox" name="js_crawl"> JavaScript crawling</label>
+            <label class="check"><input type="checkbox" name="headless"> Headless browser</label>
+            <label class="check"><input type="checkbox" name="form_extraction"> Form extraction</label>
+            <label class="check"><input type="checkbox" name="automatic_form_fill"> Automatic form fill</label>
+          </div>
+        </div>
+      </details>
+
+      <details class="card collapsible">
+        <summary><h2>Scope &amp; filters</h2><span class="subtle">include / exclude patterns, extensions</span></summary>
+        <div class="collapsible-body">
+          <div class="field-row">
+            <label class="field"><span>Include pattern (regex)</span><input type="text" name="include_regex" placeholder="/api/"></label>
+            <label class="field"><span>Exclude pattern (regex)</span><input type="text" name="exclude_regex" placeholder="logout|signout"></label>
+          </div>
+          <label class="field">
+            <span>Extension match list <em class="req">katana extensions list</em></span>
+            <select name="extension_list">
+              <option value="">— none —</option>
+              {% for wordlist in wordlists if wordlist.category == 'extensions' %}
+              <option value="{{ wordlist.id }}">{{ wordlist.name }} · {{ wordlist.size_human }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+      </details>
+
+      <details class="card collapsible">
+        <summary><h2>Headers &amp; authentication</h2><span class="subtle">authorized authenticated crawling</span></summary>
+        <div class="collapsible-body">
+          <label class="field">
+            <span>Headers (one per line, <code>Name: value</code>)</span>
+            <textarea name="headers" rows="3" placeholder="User-Agent: toolkit"></textarea>
+          </label>
+          <label class="field">
+            <span>Header list file <em class="req">katana headers list</em></span>
+            <select name="header_list">
+              <option value="">— none —</option>
+              {% for wordlist in wordlists if wordlist.category == 'headers' %}
+              <option value="{{ wordlist.id }}">{{ wordlist.name }} · {{ wordlist.size_human }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="field-row">
+            <label class="field"><span>Cookies</span><input type="text" name="cookies" placeholder="session=abc"></label>
+            <label class="field"><span>Authorization header</span><input type="text" name="authorization" placeholder="Bearer …"></label>
+          </div>
+          <div class="field-row">
+            <label class="field"><span>Proxy</span><input type="text" name="proxy" placeholder="http://127.0.0.1:8080"></label>
+            <label class="field"><span>Scan name (optional)</span><input type="text" name="scan_name" placeholder="staging crawl"></label>
+          </div>
+          <p class="hint">Authentication values are redacted in the scan history and never written to logs.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="column side">
+      <section class="card sticky">
+        <header class="card-header"><h2>Command preview</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="copy-command">Copy</button>
+        </header>
+        <pre class="command-preview" id="command-preview" readonly>Add a target URL…</pre>
+        <p class="hint" id="preview-error"></p>
+        <button type="submit" class="btn btn-primary btn-block" id="start-scan" {{ 'disabled' if not status.installed }}>Start crawl</button>
+        <p class="subtle small">Only scan systems you own or have explicit permission to test.</p>
+      </section>
+
+      <section class="card">
+        <header class="card-header"><h2>Recent Katana scans</h2></header>
+        {% if recent_scans %}
+        <ul class="list">
+          {% for scan in recent_scans %}
+          <li>
+            <a href="{{ url_for('scans.detail', scan_id=scan.id) }}" class="mono ellipsis">{{ scan.target }}</a>
+            <span class="status status-{{ scan.status|lower }}">{{ scan.status }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="subtle empty">No Katana scans yet.</p>{% endif %}
+      </section>
+    </div>
+  </div>
+</form>
+
+{% include "_console.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/console.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scan-form.js') }}"></script>
+{% endblock %}

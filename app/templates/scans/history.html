@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block heading %}Scan history{% endblock %}
+{% block subheading %}Every scan, its configuration and its results{% endblock %}
+
+{% block content %}
+<section class="card">
+  <form class="filters" method="get">
+    <label class="field">
+      <span>Tool</span>
+      <select name="tool" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for tool in tools %}<option value="{{ tool }}" {{ 'selected' if tool == selected_tool }}>{{ tool }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field">
+      <span>Status</span>
+      <select name="status" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for status in statuses %}<option value="{{ status }}" {{ 'selected' if status == selected_status }}>{{ status }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field grow">
+      <span>Search target</span>
+      <input type="search" id="history-search" placeholder="example.local">
+    </label>
+  </form>
+
+  {% if scans %}
+  <table class="table" id="history-table">
+    <thead><tr><th>ID</th><th>Tool</th><th>Target</th><th>Status</th><th>Results</th><th>Started</th><th>Duration</th><th></th></tr></thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr data-scan-row="{{ scan.id }}" data-target="{{ scan.target|lower }}">
+        <td class="mono">#{{ scan.id }}</td>
+        <td><span class="tag tag-{{ scan.tool }}">{{ scan.tool }}</span></td>
+        <td class="mono ellipsis" title="{{ scan.target }}">
+          <a href="{{ url_for('scans.detail', scan_id=scan.id) }}">{{ scan.name or scan.target }}</a>
+        </td>
+        <td><span class="status status-{{ scan.status|lower }}">{{ scan.status }}</span></td>
+        <td>{{ scan.result_count }}</td>
+        <td class="subtle">{{ scan.start_time|datetime }}</td>
+        <td class="subtle">{{ scan.duration_seconds|duration }}</td>
+        <td class="row">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.detail', scan_id=scan.id) }}">Open</a>
+          <button class="btn btn-ghost btn-sm" data-action="restart" data-scan-id="{{ scan.id }}">Restart</button>
+          <button class="btn btn-danger btn-sm" data-action="delete" data-scan-id="{{ scan.id }}">Delete</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="subtle empty">No scans match these filters.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/scan-actions.js') }}"></script>
+{% endblock %}

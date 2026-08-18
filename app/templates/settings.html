@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block heading %}Settings{% endblock %}
+{% block subheading %}General behaviour, tool binaries and wordlist locations{% endblock %}
+
+{% block content %}
+<form method="post" action="{{ url_for('settings.update') }}" class="split">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="column">
+    <section class="card">
+      <header class="card-header"><h2>General</h2></header>
+      <div class="field-row">
+        <label class="field">
+          <span>Theme</span>
+          <select name="theme">
+            {% for option in ['dark', 'midnight', 'matrix'] %}
+            <option value="{{ option }}" {{ 'selected' if settings.theme == option }}>{{ option|title }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Maximum concurrent scans</span>
+          <input type="number" name="max_concurrent_scans" value="{{ settings.max_concurrent_scans }}" min="1" max="20">
+        </label>
+        <label class="field">
+          <span>Default timeout (s)</span>
+          <input type="number" name="default_timeout" value="{{ settings.default_timeout }}" min="1" max="3600">
+        </label>
+        <label class="field">
+          <span>Automatically save results</span>
+          <select name="auto_save_results">
+            <option value="true" {{ 'selected' if settings.auto_save_results == 'true' }}>Enabled</option>
+            <option value="false" {{ 'selected' if settings.auto_save_results == 'false' }}>Disabled</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint mono">Scan output directory: {{ paths.scans }}</p>
+    </section>
+
+    <section class="card">
+      <header class="card-header">
+        <h2>Tools</h2>
+        <button class="btn btn-ghost btn-sm" type="button" id="detect-tools">Re-detect binaries</button>
+      </header>
+      <div class="field-row">
+        <label class="field">
+          <span>ffuf binary</span>
+          <input type="text" name="ffuf_binary" value="{{ settings.ffuf_binary }}">
+          <small class="hint" data-tool-status="ffuf">
+            {{ '✓ ' ~ (tool_status.ffuf.path or '') ~ ' (' ~ (tool_status.ffuf.version or 'unknown version') ~ ')' if tool_status.ffuf.installed else '✗ not found' }}
+          </small>
+        </label>
+        <label class="field">
+          <span>Katana binary</span>
+          <input type="text" name="katana_binary" value="{{ settings.katana_binary }}">
+          <small class="hint" data-tool-status="katana">
+            {{ '✓ ' ~ (tool_status.katana.path or '') ~ ' (' ~ (tool_status.katana.version or 'unknown version') ~ ')' if tool_status.katana.installed else '✗ not found' }}
+          </small>
+        </label>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-header"><h2>Wordlists</h2></header>
+      <div class="field-row">
+        <label class="field">
+          <span>ffuf wordlists directory</span>
+          <input type="text" value="{{ paths.ffuf_wordlists }}" readonly class="mono">
+        </label>
+        <label class="field">
+          <span>Katana wordlists directory</span>
+          <input type="text" value="{{ paths.katana_wordlists }}" readonly class="mono">
+        </label>
+      </div>
+      <p class="hint">The two libraries are always independent. Change the locations with the
+        <code>WST_FFUF_WORDLIST_DIR</code> and <code>WST_KATANA_WORDLIST_DIR</code> environment variables.
+        Maximum upload size: {{ max_upload_mb }} MB.</p>
+    </section>
+  </div>
+
+  <div class="column side">
+    <section class="card sticky">
+      <header class="card-header"><h2>Apply</h2></header>
+      <button class="btn btn-primary btn-block" type="submit">Save settings</button>
+      <p class="subtle small">Settings are stored in SQLite alongside the scan history.</p>
+    </section>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

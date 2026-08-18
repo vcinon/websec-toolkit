@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Scan #{{ scan.id }} — Web Security Toolkit{% endblock %}
+{% block heading %}Scan #{{ scan.id }} · {{ scan.tool }}{% endblock %}
+{% block subheading %}{{ scan.name or scan.target }}{% endblock %}
+{% block actions %}
+  <span class="status status-{{ scan.status|lower }}" id="scan-status">{{ scan.status }}</span>
+  <button class="btn btn-ghost btn-sm" data-action="save" data-scan-id="{{ scan.id }}" data-saved="{{ 'true' if scan.saved else 'false' }}">
+    {{ 'Saved' if scan.saved else 'Save scan' }}
+  </button>
+  <button class="btn btn-ghost btn-sm" data-action="restart" data-scan-id="{{ scan.id }}">Restart</button>
+  {% if is_running %}<button class="btn btn-danger btn-sm" data-action="stop" data-scan-id="{{ scan.id }}">Stop</button>{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if is_running %}
+  {% with scan_id = scan.id, tool_name = scan.tool|upper %}{% include "_console.html" %}{% endwith %}
+{% endif %}
+
+<div class="grid meta-grid">
+  <div class="card stat"><span class="stat-label">Target</span><span class="mono ellipsis" title="{{ scan.target }}">{{ scan.target }}</span></div>
+  <div class="card stat"><span class="stat-label">Started</span><span>{{ scan.start_time|datetime }}</span></div>
+  <div class="card stat"><span class="stat-label">Ended</span><span>{{ scan.end_time|datetime }}</span></div>
+  <div class="card stat"><span class="stat-label">Duration</span><span>{{ scan.duration_seconds|duration }}</span></div>
+  <div class="card stat"><span class="stat-label">Results</span><span>{{ scan.result_count }}</span></div>
+</div>
+
+{% if scan.error %}
+<div class="card warn-card">
+  <h2>{{ scan.tool }} reported a problem</h2>
+  <p class="hint mono">{{ scan.error }}</p>
+</div>
+{% endif %}
+
+<div class="tabs" data-tabs>
+  <div class="tab-bar">
+    <button class="tab active" data-tab="results">Results</button>
+    <button class="tab" data-tab="raw">Raw output</button>
+    <button class="tab" data-tab="config">Configuration</button>
+    <button class="tab" data-tab="command">Command</button>
+  </div>
+
+  <section class="tab-panel active" data-panel="results" id="results-panel"
+           data-scan-id="{{ scan.id }}" data-tool="{{ scan.tool }}">
+    <div class="card">
+      <header class="card-header">
+        <div class="row wrap">
+          <input type="search" id="result-search" placeholder="Search results…">
+          <input type="text" id="result-status-filter" placeholder="Status (e.g. 200,301)">
+          {% if scan.tool == 'ffuf' %}
+          <input type="text" id="result-size-filter" placeholder="Min size">
+          {% else %}
+          <input type="text" id="result-host-filter" placeholder="Host">
+          <input type="text" id="result-ext-filter" placeholder="Extension">
+          <label class="check"><input type="checkbox" id="result-dedupe" checked> Deduplicate</label>
+          {% endif %}
+        </div>
+        <div class="row">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.api_export', scan_id=scan.id, format='json') }}">Export JSON</a>
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.api_export', scan_id=scan.id, format='csv') }}">Export CSV</a>
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.api_export', scan_id=scan.id, format='txt') }}">Export URLs</a>
+        </div>
+      </header>
+      <div class="table-wrap">
+        <table class="table results-table" id="results-table">
+          <thead>
+            <tr>
+              {% for column in columns %}<th data-sort="{{ column }}">{{ column.replace('_', ' ')|title }}</th>{% endfor %}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="subtle" id="results-count"></p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="raw">
+    <div class="card">
+      <header class="card-header"><h2>Raw output</h2>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.api_raw', scan_id=scan.id) }}">Download</a>
+      </header>
+      <pre class="console static">{{ raw_output }}</pre>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="config">
+    <div class="card">
+      <header class="card-header"><h2>Configuration</h2></header>
+      <pre class="code-block">{{ scan.safe_config()|tojson(indent=2) }}</pre>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="command">
+    <div class="card">
+      <header class="card-header"><h2>Generated command</h2>
+        <button class="btn btn-ghost btn-sm" id="copy-command" data-command="{{ scan.command_string }}">Copy</button>
+      </header>
+      <pre class="command-preview" id="command-preview">{{ scan.command_string }}</pre>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/console.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scan-actions.js') }}"></script>
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+{% endblock %}

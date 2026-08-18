@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block heading %}Initial setup{% endblock %}
+{% block subheading %}Checks performed when the application started{% endblock %}
+
+{% block content %}
+<section class="card">
+  <ul class="checklist">
+    {% for step in setup.steps %}
+    <li class="{{ 'ok' if step.ok else 'bad' }}">
+      <span class="check">{{ '✓' if step.ok else '✗' }}</span>
+      <span class="check-label">{{ step.label }}</span>
+      <span class="mono subtle">{{ step.detail }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if setup.ready %}
+    <p class="ok-text">Everything is ready.</p>
+  {% else %}
+    <p class="hint">Some components are missing. Missing binaries are never installed automatically —
+      follow the install instructions on the dashboard, then re-detect from Settings.</p>
+  {% endif %}
+  <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Open dashboard</a>
+</section>
+{% endblock %}

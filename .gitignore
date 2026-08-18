@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+instance/
+*.sqlite
+*.db
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# uploaded / user supplied wordlists (starter lists are tracked explicitly)
+wordlists/*/*/*
+!wordlists/*/*/.gitkeep
+!wordlists/ffuf/directories/common-directories.txt
+!wordlists/ffuf/files/common-files.txt
+!wordlists/ffuf/parameters/common-parameters.txt
+!wordlists/ffuf/subdomains/common-subdomains.txt
+!wordlists/katana/crawl/example-seeds.txt
+!wordlists/katana/extensions/common-extensions.txt
+!wordlists/katana/headers/example-headers.txt

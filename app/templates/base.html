@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}Web Security Toolkit{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#9889;</text></svg>">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">&#9632;</span>
+      <div>
+        <div class="brand-title">WEB SECURITY</div>
+        <div class="brand-sub">TOOLKIT</div>
+      </div>
+    </div>
+    <nav>
+      <a class="nav-item {{ 'active' if request.endpoint == 'dashboard.index' }}" href="{{ url_for('dashboard.index') }}">Dashboard</a>
+      <div class="nav-group">Tools</div>
+      <a class="nav-item {{ 'active' if request.blueprint == 'ffuf' }}" href="{{ url_for('ffuf.index') }}"><span class="dot" style="background:#00d38a"></span>ffuf</a>
+      <a class="nav-item {{ 'active' if request.blueprint == 'katana' }}" href="{{ url_for('katana.index') }}"><span class="dot" style="background:#4aa8ff"></span>Katana</a>
+      <div class="nav-group">Scans</div>
+      <a class="nav-item {{ 'active' if request.endpoint == 'scans.active' }}" href="{{ url_for('scans.active') }}">Active {% if active_scans %}<span class="badge">{{ active_scans }}</span>{% endif %}</a>
+      <a class="nav-item {{ 'active' if request.endpoint == 'scans.history' }}" href="{{ url_for('scans.history') }}">History</a>
+      <div class="nav-group">Wordlists</div>
+      <a class="nav-item {{ 'active' if request.view_args and request.view_args.get('slug') == 'ffuf' and request.blueprint == 'wordlists' }}" href="{{ url_for('wordlists.library', slug='ffuf') }}">ffuf lists</a>
+      <a class="nav-item {{ 'active' if request.view_args and request.view_args.get('slug') == 'katana' and request.blueprint == 'wordlists' }}" href="{{ url_for('wordlists.library', slug='katana') }}">Katana lists</a>
+      <div class="nav-group">System</div>
+      <a class="nav-item {{ 'active' if request.blueprint == 'settings' }}" href="{{ url_for('settings.index') }}">Settings</a>
+      <a class="nav-item {{ 'active' if request.endpoint == 'dashboard.setup' }}" href="{{ url_for('dashboard.setup') }}">Setup status</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="notice">Only scan systems you own or have explicit permission to test.</div>
+    </div>
+  </aside>
+  <main class="content">
+    <header class="topbar">
+      <div>
+        <h1>{% block heading %}{% endblock %}</h1>
+        <p class="subtle">{% block subheading %}{% endblock %}</p>
+      </div>
+      <div class="topbar-actions">{% block actions %}{% endblock %}</div>
+    </header>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    <div id="toast-host" class="toast-host"></div>
+    <section class="page">{% block content %}{% endblock %}</section>
+    <footer class="footer">Authorized testing only &middot; {{ current_year }}</footer>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
