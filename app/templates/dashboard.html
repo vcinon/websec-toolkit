@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block heading %}Dashboard{% endblock %}
+{% block subheading %}Tool status, scan activity and recent runs{% endblock %}
+
+{% block content %}
+<div class="grid tool-grid">
+  {% for tool in tools %}
+  <article class="card tool-card">
+    <header>
+      <h2>{{ tool.name|upper }}</h2>
+      <span class="pill {{ 'pill-ok' if tool.status.installed else 'pill-bad' }}">
+        {{ '● Installed' if tool.status.installed else '✗ Not installed' }}
+      </span>
+    </header>
+    <p class="subtle">{{ tool.description }}</p>
+    <dl class="meta">
+      <div><dt>Version</dt><dd>{{ tool.status.version or '—' }}</dd></div>
+      <div><dt>Binary</dt><dd class="mono">{{ tool.status.path or tool.status.binary }}</dd></div>
+      <div><dt>Scans</dt><dd>{{ tool.scan_count }}</dd></div>
+    </dl>
+    {% if not tool.status.installed %}
+      <p class="hint mono">{{ tool.status.install_hint }}</p>
+    {% endif %}
+    <a class="btn btn-primary" href="{{ url_for(tool.slug ~ '.index') }}">Launch</a>
+  </article>
+  {% endfor %}
+</div>
+
+<div class="grid stat-grid">
+  <div class="card stat"><span class="stat-value">{{ stats.active }}</span><span class="stat-label">Active scans</span></div>
+  <div class="card stat"><span class="stat-value">{{ stats.completed }}</span><span class="stat-label">Completed</span></div>
+  <div class="card stat"><span class="stat-value">{{ stats.stopped }}</span><span class="stat-label">Stopped</span></div>
+  <div class="card stat"><span class="stat-value">{{ stats.failed }}</span><span class="stat-label">Failed</span></div>
+  <div class="card stat"><span class="stat-value">{{ stats.saved }}</span><span class="stat-label">Saved</span></div>
+</div>
+
+<section class="card">
+  <header class="card-header">
+    <h2>Recent scans</h2>
+    <a class="btn btn-ghost" href="{{ url_for('scans.history') }}">Full history</a>
+  </header>
+  {% if recent_scans %}
+  <table class="table">
+    <thead><tr><th>Tool</th><th>Target</th><th>Status</th><th>Results</th><th>Started</th><th></th></tr></thead>
+    <tbody>
+      {% for scan in recent_scans %}
+      <tr>
+        <td><span class="tag tag-{{ scan.tool }}">{{ scan.tool }}</span></td>
+        <td class="mono ellipsis" title="{{ scan.target }}">{{ scan.target }}</td>
+        <td><span class="status status-{{ scan.status|lower }}">{{ scan.status }}</span></td>
+        <td>{{ scan.result_count }}</td>
+        <td class="subtle">{{ scan.start_time|datetime }}</td>
+        <td><a class="btn btn-ghost btn-sm" href="{{ url_for('scans.detail', scan_id=scan.id) }}">Open</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="subtle empty">No scans yet. Launch ffuf or Katana to get started.</p>
+  {% endif %}
+</section>
+{% endblock %}

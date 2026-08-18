@@ -1,0 +1,18 @@
+{# Live scan console. Requires console.js and a scan id set via data-scan-id. #}
+<section class="card console-card" id="console-card" data-scan-id="{{ scan_id or '' }}" {% if not scan_id %}hidden{% endif %}>
+  <header class="card-header">
+    <h2><span id="console-tool">{{ tool_name|default('Scan') }}</span> — <span id="console-status" class="status status-running">RUNNING</span></h2>
+    <div class="row">
+      <button class="btn btn-ghost btn-sm" id="console-pause" type="button">Pause</button>
+      <button class="btn btn-danger btn-sm" id="console-stop" type="button">Stop</button>
+      <a class="btn btn-ghost btn-sm" id="console-open" href="#">Open scan</a>
+    </div>
+  </header>
+  <div class="console" id="console-output" aria-live="polite"></div>
+  <footer class="console-stats">
+    <span>Lines: <strong id="console-lines">0</strong></span>
+    <span>Hits: <strong id="console-hits">0</strong></span>
+    <span>Errors: <strong id="console-errors">0</strong></span>
+    <span id="console-elapsed">Elapsed: 0s</span>
+  </footer>
+</section>

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block heading %}Error {{ status }}{% endblock %}
+{% block subheading %}The request could not be completed{% endblock %}
+
+{% block content %}
+<section class="card error-card">
+  <h2>{{ error }}</h2>
+  {% if hint %}<p class="hint mono">Reason: {{ hint }}</p>{% endif %}
+  <div class="row">
+    <a class="btn btn-primary" href="{{ url_for('dashboard.index') }}">Back to dashboard</a>
+    <a class="btn btn-ghost" href="{{ url_for('wordlists.library', slug='ffuf') }}">Manage wordlists</a>
+  </div>
+</section>
+{% endblock %}

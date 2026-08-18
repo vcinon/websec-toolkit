@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}ffuf — Web Security Toolkit{% endblock %}
+{% block heading %}ffuf{% endblock %}
+{% block subheading %}HTTP fuzzing — directories, files, parameters and virtual hosts{% endblock %}
+{% block actions %}
+  <span class="pill {{ 'pill-ok' if status.installed else 'pill-bad' }}">
+    {{ ('● ' ~ (status.version or 'installed')) if status.installed else '✗ not installed' }}
+  </span>
+{% endblock %}
+
+{% block content %}
+{% if not status.installed %}
+<div class="card warn-card">
+  <h2>ffuf is not installed</h2>
+  <p class="hint mono">{{ status.install_hint }}</p>
+  <p class="subtle">Binaries are never installed automatically. Set a custom path in
+    <a href="{{ url_for('settings.index') }}">Settings</a> if ffuf lives outside your PATH.</p>
+</div>
+{% endif %}
+
+<form id="scan-form" class="scan-form" data-tool="ffuf" autocomplete="off">
+  <div class="split">
+    <div class="column">
+      <section class="card">
+        <header class="card-header"><h2>Preset</h2></header>
+        <div class="field-row">
+          {% for key, preset in presets.items() %}
+          <label class="preset-option">
+            <input type="radio" name="preset" value="{{ key }}" {{ 'checked' if key == 'directory' }}>
+            <span>{{ preset.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="card">
+        <header class="card-header"><h2>Target</h2></header>
+        <label class="field">
+          <span>Target URL <em class="req">FUZZ required</em></span>
+          <input type="url" name="url" id="ffuf-url" placeholder="https://example.local/FUZZ" required>
+          <small class="hint" id="fuzz-hint">Place the <code>FUZZ</code> keyword in the URL, a header value, the cookie string or the body.</small>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>HTTP method</span>
+            <select name="method">
+              {% for method in ['GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'] %}
+              <option value="{{ method }}">{{ method }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="field">
+            <span>Threads</span>
+            <input type="number" name="threads" value="40" min="1" max="500">
+          </label>
+          <label class="field">
+            <span>Timeout (s)</span>
+            <input type="number" name="timeout" value="{{ default_timeout }}" min="1" max="3600">
+          </label>
+        </div>
+        <div class="field-row">
+          <button type="button" class="btn btn-ghost btn-sm" data-fuzz-target="path">FUZZ in path</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fuzz-target="query">FUZZ in query</button>
+          <button type="button" class="btn btn-ghost btn-sm" data-fuzz-target="host">FUZZ in Host header</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <header class="card-header">
+          <h2>Wordlist</h2>
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('wordlists.library', slug='ffuf') }}">Manage wordlists</a>
+        </header>
+        <div class="field-row">
+          <label class="field">
+            <span>Category</span>
+            <select id="wordlist-category">
+              <option value="">All</option>
+              {% for category in categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="field grow">
+            <span>Wordlist</span>
+            <select name="wordlist" id="wordlist-select" data-selected="{{ last_wordlist or default_wordlist }}">
+              <option value="">— select a wordlist —</option>
+              {% for wordlist in wordlists %}
+              <option value="{{ wordlist.id }}" data-category="{{ wordlist.category }}">
+                {{ wordlist.category }}/{{ wordlist.name }} · {{ wordlist.size_human }}{% if wordlist.entries %} · {{ wordlist.entries }} entries{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        {% if not wordlists %}
+        <p class="hint">No ffuf wordlists yet — upload one from the
+          <a href="{{ url_for('wordlists.library', slug='ffuf') }}">ffuf wordlist library</a>.</p>
+        {% endif %}
+      </section>
+
+      <details class="card collapsible">
+        <summary><h2>Advanced</h2><span class="subtle">request, redirects, proxy, rate</span></summary>
+        <div class="collapsible-body">
+          <label class="field">
+            <span>Headers (one per line, <code>Name: value</code>)</span>
+            <textarea name="headers" rows="3" placeholder="User-Agent: toolkit&#10;X-Api-Key: FUZZ"></textarea>
+          </label>
+          <label class="field">
+            <span>Cookies</span>
+            <input type="text" name="cookies" placeholder="session=abc; theme=dark">
+          </label>
+          <label class="field">
+            <span>Request body</span>
+            <textarea name="body" rows="2" placeholder="username=admin&password=FUZZ"></textarea>
+          </label>
+          <div class="field-row">
+            <label class="field"><span>Extensions</span><input type="text" name="extensions" placeholder=".php,.bak,.txt"></label>
+            <label class="field"><span>Proxy</span><input type="text" name="proxy" placeholder="http://127.0.0.1:8080"></label>
+          </div>
+          <div class="field-row">
+            <label class="field"><span>Rate limit (req/s, 0 = off)</span><input type="number" name="rate" value="0" min="0"></label>
+            <label class="field"><span>Delay (s or range)</span><input type="text" name="delay" placeholder="0.1-1.0"></label>
+          </div>
+          <div class="field-row checks">
+            <label class="check"><input type="checkbox" name="follow_redirects"> Follow redirects</label>
+            <label class="check"><input type="checkbox" name="tls_verify" checked> Verify TLS certificates</label>
+            <label class="check"><input type="checkbox" name="auto_calibrate"> Auto-calibrate</label>
+          </div>
+        </div>
+      </details>
+
+      <details class="card collapsible">
+        <summary><h2>Expert</h2><span class="subtle">matchers, filters, recursion, output</span></summary>
+        <div class="collapsible-body">
+          <h3 class="section-title">Matching</h3>
+          <div class="field-row">
+            <label class="field"><span>Status codes</span><input type="text" name="match_status" value="200,204,301,302,307,401,403"></label>
+            <label class="field"><span>Size</span><input type="text" name="match_size" placeholder="1234"></label>
+            <label class="field"><span>Words</span><input type="text" name="match_words" placeholder="42"></label>
+            <label class="field"><span>Lines</span><input type="text" name="match_lines" placeholder="10"></label>
+          </div>
+          <label class="field"><span>Match regex</span><input type="text" name="match_regex" placeholder="admin|dashboard"></label>
+
+          <h3 class="section-title">Filtering</h3>
+          <div class="field-row">
+            <label class="field"><span>Status codes</span><input type="text" name="filter_status" placeholder="404"></label>
+            <label class="field"><span>Size</span><input type="text" name="filter_size" placeholder="0"></label>
+            <label class="field"><span>Words</span><input type="text" name="filter_words" placeholder="12"></label>
+            <label class="field"><span>Lines</span><input type="text" name="filter_lines" placeholder="1"></label>
+          </div>
+          <label class="field"><span>Filter regex</span><input type="text" name="filter_regex" placeholder="not found"></label>
+
+          <h3 class="section-title">Recursion &amp; output</h3>
+          <div class="field-row">
+            <label class="check"><input type="checkbox" name="recursion"> Recursion</label>
+            <label class="field"><span>Recursion depth</span><input type="number" name="recursion_depth" value="0" min="0" max="20"></label>
+            <label class="check"><input type="checkbox" name="stop_on_error"> Stop on spurious errors</label>
+          </div>
+          <div class="field-row">
+            <label class="field">
+              <span>Export format (results are always stored as JSON)</span>
+              <select name="output_format">
+                <option value="json">JSON</option>
+                <option value="csv">CSV</option>
+                <option value="html">HTML</option>
+              </select>
+            </label>
+            <label class="field"><span>Scan name (optional)</span><input type="text" name="scan_name" placeholder="staging directory sweep"></label>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="column side">
+      <section class="card sticky">
+        <header class="card-header"><h2>Command preview</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="copy-command">Copy</button>
+        </header>
+        <pre class="command-preview" id="command-preview" readonly>Fill in a target and wordlist…</pre>
+        <p class="hint" id="preview-error"></p>
+        <button type="submit" class="btn btn-primary btn-block" id="start-scan" {{ 'disabled' if not status.installed }}>Start scan</button>
+        <p class="subtle small">Only scan systems you own or have explicit permission to test.</p>
+      </section>
+
+      <section class="card">
+        <header class="card-header"><h2>Recent ffuf scans</h2></header>
+        {% if recent_scans %}
+        <ul class="list">
+          {% for scan in recent_scans %}
+          <li>
+            <a href="{{ url_for('scans.detail', scan_id=scan.id) }}" class="mono ellipsis">{{ scan.target }}</a>
+            <span class="status status-{{ scan.status|lower }}">{{ scan.status }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="subtle empty">No ffuf scans yet.</p>{% endif %}
+      </section>
+    </div>
+  </div>
+</form>
+
+{% include "_console.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/console.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scan-form.js') }}"></script>
+{% endblock %}

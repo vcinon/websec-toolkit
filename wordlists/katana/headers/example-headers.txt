@@ -1,0 +1,4 @@
+# Header file passed to katana (-headers). One 'Name: value' per line.
+# Never commit real credentials; keep authenticated headers in a local, untracked file.
+User-Agent: web-security-toolkit/1.0 (authorized testing)
+Accept-Language: en-US,en;q=0.9
