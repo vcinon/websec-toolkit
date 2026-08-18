@@ -1,0 +1,4 @@
+# Katana seed URL list — one target URL per line.
+# Only add hosts you own or are explicitly authorized to test.
+https://example.local
+https://staging.example.local

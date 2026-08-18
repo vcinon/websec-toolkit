@@ -1,0 +1,19 @@
+# Extensions katana should keep (-extension-match), one per line.
+php
+asp
+aspx
+jsp
+json
+xml
+js
+map
+txt
+bak
+sql
+zip
+tar
+gz
+env
+yml
+yaml
+config

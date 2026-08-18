@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block heading %}Active scans{% endblock %}
+{% block subheading %}Running and queued processes{% endblock %}
+
+{% block content %}
+<section class="card">
+  {% if scans %}
+  <table class="table">
+    <thead><tr><th>ID</th><th>Tool</th><th>Target</th><th>Status</th><th>PID</th><th>Started</th><th></th></tr></thead>
+    <tbody>
+      {% for scan in scans %}
+      <tr data-scan-row="{{ scan.id }}">
+        <td class="mono">#{{ scan.id }}</td>
+        <td><span class="tag tag-{{ scan.tool }}">{{ scan.tool }}</span></td>
+        <td class="mono ellipsis" title="{{ scan.target }}">{{ scan.target }}</td>
+        <td><span class="status status-{{ scan.status|lower }}">{{ scan.status }}</span></td>
+        <td class="mono">{{ scan.pid or '—' }}</td>
+        <td class="subtle">{{ scan.start_time|datetime }}</td>
+        <td class="row">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('scans.detail', scan_id=scan.id) }}">Console</a>
+          <button class="btn btn-danger btn-sm" data-action="stop" data-scan-id="{{ scan.id }}">Stop</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="subtle empty">Nothing running right now.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/scan-actions.js') }}"></script>
+{% endblock %}

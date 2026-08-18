@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}{{ tool_name }} wordlists{% endblock %}
+{% block heading %}{{ tool_name }} wordlists{% endblock %}
+{% block subheading %}Independent library — {{ root }}{% endblock %}
+
+{% block content %}
+<div class="split">
+  <div class="column">
+    <section class="card" id="wordlist-library" data-slug="{{ slug }}" data-default="{{ default_wordlist }}">
+      <header class="card-header">
+        <h2>Library</h2>
+        <input type="search" id="wordlist-search" placeholder="Filter…">
+      </header>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Category</th><th>Name</th><th>Size</th><th>Entries</th><th></th></tr></thead>
+          <tbody>
+            {% for wordlist in wordlists %}
+            <tr data-id="{{ wordlist.id }}" data-name="{{ wordlist.name|lower }}">
+              <td><span class="tag">{{ wordlist.category }}</span></td>
+              <td class="mono">{{ wordlist.name }}
+                {% if wordlist.id == default_wordlist %}<span class="pill pill-ok">default</span>{% endif %}
+              </td>
+              <td>{{ wordlist.size_human }}</td>
+              <td>{{ wordlist.entries if wordlist.entries is not none else '—' }}</td>
+              <td class="row">
+                <button class="btn btn-ghost btn-sm" data-wl-action="preview">Preview</button>
+                <button class="btn btn-ghost btn-sm" data-wl-action="default">Set default</button>
+                <button class="btn btn-ghost btn-sm" data-wl-action="rename">Rename</button>
+                <button class="btn btn-danger btn-sm" data-wl-action="delete">Delete</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if not wordlists %}<p class="subtle empty">This library is empty. Upload a wordlist to get started.</p>{% endif %}
+      <pre class="code-block" id="wordlist-preview" hidden></pre>
+    </section>
+  </div>
+
+  <div class="column side">
+    <section class="card">
+      <header class="card-header"><h2>Upload</h2></header>
+      <form id="upload-form" enctype="multipart/form-data">
+        <label class="field">
+          <span>Category</span>
+          <select name="category" id="upload-category">
+            {% for category in categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>File (.txt, .lst, .list, .dic, .words)</span>
+          <input type="file" name="file" required>
+        </label>
+        <button class="btn btn-primary btn-block" type="submit">Upload wordlist</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <header class="card-header"><h2>New category</h2></header>
+      <form id="category-form">
+        <label class="field">
+          <span>Category name</span>
+          <input type="text" name="name" placeholder="api-endpoints" required>
+        </label>
+        <button class="btn btn-ghost btn-block" type="submit">Create category</button>
+      </form>
+      <p class="hint">Wordlists for {{ tool_name }} are stored separately from every other tool. Nothing is shared.</p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/wordlists.js') }}"></script>
+{% endblock %}
